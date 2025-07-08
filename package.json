@@ -1,13 +1,37 @@
 {
-  "name": "world-clock",
+  "name": "world-clock-weather-app",
+  "version": "1.0.0",
+  "description": "A stunning world clock and weather application with glassmorphism design",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
+  "keywords": [
+    "react",
+    "typescript",
+    "weather",
+    "clock",
+    "glassmorphism",
+    "tailwindcss",
+    "daisyui"
+  ],
+  "author": "Devsaround",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/Clock-Weather-App.git"
+  },
+  "bugs": {
+    "url": "https://github.com/your-username/Clock-Weather-App/issues"
+  },
+  "homepage": "https://github.com/your-username/Clock-Weather-App#readme",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "lint:fix": "eslint . --fix",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist",
+    "build:analyze": "npm run build && npx vite-bundle-analyzer dist/assets/*.js"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.3",

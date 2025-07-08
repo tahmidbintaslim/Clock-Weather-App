@@ -10,6 +10,17 @@ import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { useEffect, useState } from "react";
 
+/**
+ * Weather Clock App
+ * 
+ * To get weather data working:
+ * 1. Get a free API key from https://openweathermap.org/api
+ * 2. Replace 'demo_key_replace_with_real_key' in .env file with your actual API key
+ * 3. Restart the development server if needed
+ * 
+ * The app will work without an API key but will show "Weather unavailable"
+ */
+
 interface Zone {
   label: string;
   tz: string;
@@ -58,7 +69,12 @@ export default function App() {
   // Individual refresh handler
   const refreshWeatherForCity = async (zone: Zone) => {
     const key = import.meta.env.VITE_OPEN_WEATHER_API_KEY;
-    if (!key) return;
+    if (!key) {
+      // No API key available
+      setWeather((prev) => ({ ...prev, [zone.label]: null }));
+      setWeatherLoading((prev) => ({ ...prev, [zone.label]: false }));
+      return;
+    }
 
     try {
       setWeatherLoading((prev) => ({ ...prev, [zone.label]: true }));
@@ -89,6 +105,7 @@ export default function App() {
 
     } catch {
       // Silently handle refresh errors in production
+      setWeather((prev) => ({ ...prev, [zone.label]: null }));
     } finally {
       setWeatherLoading((prev) => ({ ...prev, [zone.label]: false }));
     }
@@ -109,6 +126,12 @@ export default function App() {
           hour12: true,
         });
 
+        // Get day of the week for the timezone
+        const dayString = now.toLocaleDateString("en-US", {
+          timeZone: tz,
+          weekday: "long",
+        });
+
         // Get timezone offset
         const tempDate = new Date(now.toLocaleString("en-US", { timeZone: tz }));
         const utcDate = new Date(now.toLocaleString("en-US", { timeZone: "UTC" }));
@@ -116,7 +139,7 @@ export default function App() {
         const offsetHours = Math.round(offsetMs / (1000 * 60 * 60));
         const gmtOffset = offsetHours >= 0 ? `+${offsetHours}` : `${offsetHours}`;
 
-        t[label] = `${timeString} (GMT${gmtOffset})`;
+        t[label] = `${dayString}|${timeString} (GMT${gmtOffset})`;
       });
       setTimes(t);
     };
@@ -130,7 +153,11 @@ export default function App() {
     const key = import.meta.env.VITE_OPEN_WEATHER_API_KEY;
 
     if (!key) {
-      // Silently handle missing API key in production
+      // No API key - set loading to false and weather to null for all zones
+      zones.forEach(({ label }) => {
+        setWeatherLoading((prev) => ({ ...prev, [label]: false }));
+        setWeather((prev) => ({ ...prev, [label]: null }));
+      });
       return;
     }
 
@@ -241,9 +268,9 @@ export default function App() {
   return (
     <div className="flex flex-col min-h-screen">
       {/* Header with theme selector */}
-      <header className="flex justify-between items-center p-4 header-glass">
+      <header className="flex justify-between items-center p-4 header-glass relative z-50">
         <h1 className="text-xl font-bold">World Clock & Weather</h1>
-        <div className="dropdown dropdown-end">
+        <div className="dropdown dropdown-end relative z-50">
           <div tabIndex={0} role="button" className="btn m-1">
             {currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1)}
             <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -252,7 +279,7 @@ export default function App() {
           </div>
           <ul
             tabIndex={0}
-            className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-50"
+            className="dropdown-content menu p-2 shadow bg-base-100 rounded-box w-52 z-[100]"
           >
             {themes.map((theme) => (
               <li key={theme}>
@@ -276,7 +303,7 @@ export default function App() {
 
       {/* Main grid - centered vertically */}
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="grid gap-6 grid-cols-1 lg:grid-cols-3 w-full max-w-7xl">
+        <div className="grid gap-8 grid-cols-1 lg:grid-cols-3 w-full max-w-7xl">
           {zones.map((zone) => {
             const w = weather[zone.label];
             const isLoading = weatherLoading[zone.label];
@@ -289,9 +316,19 @@ export default function App() {
             const isNight = hour < 6 || hour >= 18;
 
             return (
-              <div key={zone.label} className="weather-card-container relative">
+              <div key={zone.label} className="weather-card-container group">
+                {/* Card loading overlay */}
+                {isLoading && (
+                  <div className="absolute inset-0 z-50 bg-black/20 backdrop-blur-sm rounded-20 flex items-center justify-center">
+                    <div className="loading-container">
+                      <div className="loading loading-spinner loading-lg text-white"></div>
+                      <span className="text-white font-medium mt-2">Updating weather...</span>
+                    </div>
+                  </div>
+                )}
+
                 {/* Animated background layers */}
-                <div className="weather-card">
+                <div className="weather-card interactive-card">
                   {/* Sky backgrounds */}
                   <div className={`sky-bg ${isNight ? 'night-sky' : 'day-sky'}`}></div>
                   {w?.main && (
@@ -314,22 +351,28 @@ export default function App() {
                   {/* Weather overlay animations */}
                   {overlay}
 
+                  {/* Interactive hover overlay */}
+                  <div className="hover-overlay"></div>
+
                   {/* Text content */}
                   <div className="weather-text-container">
                     {/* City name and day/night indicator */}
-                    <div className="city-header">
-                      <h3 className="city-name">{zone.label}</h3>
-                      <div className={`day-night-indicator ${isNight ? 'night-mode' : 'day-mode'}`}>
+                    <div className="city-header enhanced-header">
+                      <div className="city-info">
+                        <h3 className="city-name">{zone.label}</h3>
+                        <div className="city-country">{zone.city.split(',')[0]}</div>
+                      </div>
+                      <div className={`day-night-indicator enhanced-indicator ${isNight ? 'night-mode' : 'day-mode'}`}>
                         {isNight ? (
                           <div className="indicator-content">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" clipRule="evenodd" />
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M17.293 13.293A8 8 0 716.707 2.707a8.001 8.001 0 1010.586 10.586z" clipRule="evenodd" />
                             </svg>
                             <span>Night</span>
                           </div>
                         ) : (
                           <div className="indicator-content">
-                            <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                               <path fillRule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clipRule="evenodd" />
                             </svg>
                             <span>Day</span>
@@ -338,32 +381,50 @@ export default function App() {
                       </div>
                     </div>
 
+                    {/* Day of the week */}
+                    <div className="day-display enhanced-day">
+                      <div className="day-text">
+                        {times[zone.label]?.split('|')[0] || "Loading..."}
+                      </div>
+                    </div>
+
                     {/* Time display */}
-                    <div className="time-display">
-                      <div className="time-main">{times[zone.label]?.split(' ')[0] || "--:--:--"}</div>
-                      <div className="time-period">{times[zone.label]?.split(' ')[1] || "AM"}</div>
-                      <div className="timezone">{times[zone.label]?.match(/\(GMT[^)]*\)/)?.[0] || "(GMT+0)"}</div>
+                    <div className="time-display enhanced-time">
+                      <div className="time-main">{times[zone.label]?.split('|')[1]?.split(' ')[0] || "--:--:--"}</div>
+                      <div className="time-secondary">
+                        <span className="time-period">{times[zone.label]?.split('|')[1]?.split(' ')[1] || "AM"}</span>
+                        <span className="timezone">{times[zone.label]?.split('|')[1]?.match(/\(GMT[^)]*\)/)?.[0] || "(GMT+0)"}</span>
+                      </div>
                     </div>
 
                     {/* Weather info */}
-                    <div className="weather-info">
-                      {isLoading ? (
-                        <div className="loading-state">
-                          <div className="loading loading-spinner loading-md"></div>
-                          <span>Loading...</span>
-                        </div>
-                      ) : w ? (
+                    <div className="weather-info enhanced-weather">
+                      {w ? (
                         <>
-                          <div className="temperature">
-                            {w.temp.toFixed(0)}
-                            <span className="degree-symbol">°C</span>
+                          <div className="temperature-section">
+                            <div className={`temperature ${getTemperatureClass(w.temp)}`}>
+                              {w.temp.toFixed(0)}
+                              <span className="degree-symbol">°C</span>
+                            </div>
+                            <div className="feels-like">
+                              Feels like {w.temp.toFixed(0)}°C
+                            </div>
                           </div>
                           <div className="weather-desc">{w.desc}</div>
-                          <TemperatureMeter temperature={w.temp} className="justify-center mt-2" />
+                          <TemperatureMeter temperature={w.temp} className="justify-center mt-3" />
                         </>
                       ) : (
                         <div className="weather-unavailable">
+                          <svg className="w-8 h-8 text-gray-400 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                          </svg>
                           <span>Weather unavailable</span>
+                          <div className="retry-hint">
+                            {import.meta.env.VITE_OPEN_WEATHER_API_KEY === 'demo_key_replace_with_real_key' || !import.meta.env.VITE_OPEN_WEATHER_API_KEY
+                              ? 'Add your OpenWeatherMap API key to .env file'
+                              : 'Check your internet connection and try refreshing'
+                            }
+                          </div>
                         </div>
                       )}
                     </div>
@@ -373,40 +434,40 @@ export default function App() {
                   <div className={`ground ground-1 ${isNight ? 'night-ground' : 'day-ground'}`}></div>
                   <div className={`ground ground-2 ${isNight ? 'night-ground' : 'day-ground'}`}></div>
 
-                  {/* Refresh button and notification */}
-                  <div className="card-footer">
+                  {/* Enhanced refresh button and notification */}
+                  <div className="card-footer enhanced-footer">
                     {/* Beautiful notification positioned above the refresh button */}
                     {showNotification && (
-                      <div className="refresh-notification">
+                      <div className="refresh-notification enhanced-notification">
                         <div className="notification-content">
-                          <div className="notification-dot"></div>
+                          <div className="notification-icon">
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          </div>
                           <span>Weather Updated!</span>
-                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
                         </div>
                         <div className="notification-arrow"></div>
                       </div>
                     )}
 
                     <Button
-                      className="refresh-button"
+                      className="refresh-button enhanced-button"
                       onClick={() => refreshWeatherForCity(zone)}
                       disabled={isLoading}
+                      aria-label={`Refresh weather for ${zone.label}`}
                     >
-                      {isLoading ? (
-                        <div className="button-content">
-                          <div className="loading loading-spinner loading-sm"></div>
-                          <span>Refreshing...</span>
-                        </div>
-                      ) : (
-                        <div className="button-content">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                          </svg>
-                          <span>Refresh</span>
-                        </div>
-                      )}
+                      <div className="button-content">
+                        <svg
+                          className={`w-4 h-4 transition-transform duration-300 ${isLoading ? 'animate-spin' : 'group-hover:rotate-180'}`}
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                        </svg>
+                        <span>{isLoading ? 'Updating...' : 'Refresh'}</span>
+                      </div>
                     </Button>
                   </div>
                 </div>
@@ -422,4 +483,13 @@ export default function App() {
       </footer>
     </div>
   );
+
+  // Helper function to get temperature class for color coding
+  function getTemperatureClass(temp: number): string {
+    if (temp >= 30) return 'hot';
+    if (temp >= 20) return 'warm';
+    if (temp >= 10) return 'mild';
+    if (temp >= 0) return 'cool';
+    return 'cold';
+  }
 }
