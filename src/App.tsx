@@ -10,17 +10,6 @@ import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { useEffect, useState } from "react";
 
-/**
- * Weather Clock App
- * 
- * To get weather data working:
- * 1. Get a free API key from https://openweathermap.org/api
- * 2. Replace 'demo_key_replace_with_real_key' in .env file with your actual API key
- * 3. Restart the development server if needed
- * 
- * The app will work without an API key but will show "Weather unavailable"
- */
-
 interface Zone {
   label: string;
   tz: string;
@@ -52,25 +41,21 @@ export default function App() {
     zones.reduce((a, z) => ({ ...a, [z.label]: false }), {})
   );
 
-  // Initialize theme from localStorage or default to light
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "light";
     setCurrentTheme(savedTheme);
     document.documentElement.setAttribute("data-theme", savedTheme);
   }, []);
 
-  // Theme change handler
   const handleThemeChange = (theme: string) => {
     setCurrentTheme(theme);
     document.documentElement.setAttribute("data-theme", theme);
     localStorage.setItem("theme", theme);
   };
 
-  // Individual refresh handler
   const refreshWeatherForCity = async (zone: Zone) => {
     const key = import.meta.env.VITE_OPEN_WEATHER_API_KEY;
     if (!key) {
-      // No API key available
       setWeather((prev) => ({ ...prev, [zone.label]: null }));
       setWeatherLoading((prev) => ({ ...prev, [zone.label]: false }));
       return;
@@ -95,29 +80,24 @@ export default function App() {
         },
       }));
 
-      // Show notification
       setNotifications((prev) => ({ ...prev, [zone.label]: true }));
 
-      // Hide notification after 3 seconds
       setTimeout(() => {
         setNotifications((prev) => ({ ...prev, [zone.label]: false }));
       }, 3000);
 
     } catch {
-      // Silently handle refresh errors in production
       setWeather((prev) => ({ ...prev, [zone.label]: null }));
     } finally {
       setWeatherLoading((prev) => ({ ...prev, [zone.label]: false }));
     }
   };
 
-  // Clock updater
   useEffect(() => {
     const tick = () => {
       const now = new Date();
       const t: Record<string, string> = {};
       zones.forEach(({ label, tz }) => {
-        // Get time in 12-hour format with AM/PM
         const timeString = now.toLocaleTimeString("en-US", {
           timeZone: tz,
           hour: "2-digit",
@@ -126,13 +106,11 @@ export default function App() {
           hour12: true,
         });
 
-        // Get day of the week for the timezone
         const dayString = now.toLocaleDateString("en-US", {
           timeZone: tz,
           weekday: "long",
         });
 
-        // Get timezone offset
         const tempDate = new Date(now.toLocaleString("en-US", { timeZone: tz }));
         const utcDate = new Date(now.toLocaleString("en-US", { timeZone: "UTC" }));
         const offsetMs = tempDate.getTime() - utcDate.getTime();
@@ -148,12 +126,10 @@ export default function App() {
     return () => clearInterval(id);
   }, []);
 
-  // Weather fetcher
   useEffect(() => {
     const key = import.meta.env.VITE_OPEN_WEATHER_API_KEY;
 
     if (!key) {
-      // No API key - set loading to false and weather to null for all zones
       zones.forEach(({ label }) => {
         setWeatherLoading((prev) => ({ ...prev, [label]: false }));
         setWeather((prev) => ({ ...prev, [label]: null }));
@@ -181,14 +157,12 @@ export default function App() {
           },
         }));
       } catch {
-        // Silently handle weather fetch errors in production
         setWeather((prev) => ({ ...prev, [label]: null }));
       } finally {
         setWeatherLoading((prev) => ({ ...prev, [label]: false }));
       }
     };
 
-    // Fetch weather for all cities
     zones.forEach(fetchWeatherForCity);
   }, []);
 
@@ -198,7 +172,6 @@ export default function App() {
     const condition = main.toLowerCase();
     const description = desc?.toLowerCase() || "";
 
-    // Determine if it's night
     const isNight = timezone ? (() => {
       const now = new Date();
       const hour = new Date(now.toLocaleString("en-US", { timeZone: timezone })).getHours();
@@ -218,26 +191,21 @@ export default function App() {
     }
 
     if (condition.includes("cloud")) {
-      // Scattered clouds - show sun peeking through
       if (description.includes("scattered") || description.includes("few")) {
         return <ScatteredCloudOverlay />;
       }
 
-      // Overcast/broken clouds - dense cloud cover
       if (description.includes("overcast") || description.includes("broken")) {
         return <CloudOverlay />;
       }
 
-      // Default clouds
       return <CloudOverlay />;
     }
 
     if (condition.includes("clear")) {
       if (isNight) {
-        // Night sky with stars
         return (
           <div className="absolute inset-0 pointer-events-none">
-            {/* Stars */}
             <div className="absolute top-4 left-4 w-1 h-1 bg-white rounded-full animate-sparkle"></div>
             <div className="absolute top-8 right-8 w-1 h-1 bg-white rounded-full animate-sparkle animation-delay-500"></div>
             <div className="absolute top-12 left-16 w-1 h-1 bg-white rounded-full animate-sparkle animation-delay-1000"></div>
@@ -245,7 +213,6 @@ export default function App() {
             <div className="absolute top-6 right-12 w-1 h-1 bg-white rounded-full animate-sparkle animation-delay-2000"></div>
             <div className="absolute top-16 left-8 w-1 h-1 bg-white rounded-full animate-sparkle animation-delay-2500"></div>
 
-            {/* Moon */}
             <div className="absolute top-6 right-6 w-8 h-8 bg-yellow-100 rounded-full opacity-80 animate-pulse"></div>
             <div className="absolute top-7 right-7 w-6 h-6 bg-yellow-200 rounded-full opacity-60"></div>
           </div>
@@ -267,7 +234,6 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen">
-      {/* Header with theme selector */}
       <header className="flex justify-between items-center p-4 header-glass relative z-50">
         <h1 className="text-xl font-bold">World Clock & Weather</h1>
         <div className="dropdown dropdown-end relative z-50">
@@ -301,7 +267,6 @@ export default function App() {
         </div>
       </header>
 
-      {/* Main grid - centered vertically */}
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="grid gap-8 grid-cols-1 lg:grid-cols-3 w-full max-w-7xl">
           {zones.map((zone) => {
@@ -310,14 +275,12 @@ export default function App() {
             const showNotification = notifications[zone.label];
             const overlay = getWeatherOverlay(w?.main, w?.desc, zone.tz);
 
-            // Determine if it's day or night for the icon
             const now = new Date();
             const hour = new Date(now.toLocaleString("en-US", { timeZone: zone.tz })).getHours();
             const isNight = hour < 6 || hour >= 18;
 
             return (
               <div key={zone.label} className="weather-card-container group">
-                {/* Card loading overlay */}
                 {isLoading && (
                   <div className="absolute inset-0 z-50 bg-black/20 backdrop-blur-sm rounded-20 flex items-center justify-center">
                     <div className="loading-container">
@@ -327,15 +290,12 @@ export default function App() {
                   </div>
                 )}
 
-                {/* Animated background layers */}
                 <div className="weather-card interactive-card">
-                  {/* Sky backgrounds */}
                   <div className={`sky-bg ${isNight ? 'night-sky' : 'day-sky'}`}></div>
                   {w?.main && (
                     <div className={`weather-sky ${w.main.toLowerCase()}-sky`}></div>
                   )}
 
-                  {/* Celestial object (sun/moon) with animation */}
                   <div className={`celestial-container ${isNight ? 'moon-position' : 'sun-position'}`}>
                     <div className={`celestial-object ${isNight ? 'moon' : 'sun'}`}>
                       {!isNight && (
@@ -348,15 +308,11 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Weather overlay animations */}
                   {overlay}
 
-                  {/* Interactive hover overlay */}
                   <div className="hover-overlay"></div>
 
-                  {/* Text content */}
                   <div className="weather-text-container">
-                    {/* City name and day/night indicator */}
                     <div className="city-header enhanced-header">
                       <div className="city-info">
                         <h3 className="city-name">{zone.label}</h3>
@@ -381,14 +337,12 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Day of the week */}
                     <div className="day-display enhanced-day">
                       <div className="day-text">
                         {times[zone.label]?.split('|')[0] || "Loading..."}
                       </div>
                     </div>
 
-                    {/* Time display */}
                     <div className="time-display enhanced-time">
                       <div className="time-main">{times[zone.label]?.split('|')[1]?.split(' ')[0] || "--:--:--"}</div>
                       <div className="time-secondary">
@@ -397,7 +351,6 @@ export default function App() {
                       </div>
                     </div>
 
-                    {/* Weather info */}
                     <div className="weather-info enhanced-weather">
                       {w ? (
                         <>
@@ -430,13 +383,10 @@ export default function App() {
                     </div>
                   </div>
 
-                  {/* Ground layers */}
                   <div className={`ground ground-1 ${isNight ? 'night-ground' : 'day-ground'}`}></div>
                   <div className={`ground ground-2 ${isNight ? 'night-ground' : 'day-ground'}`}></div>
 
-                  {/* Enhanced refresh button and notification */}
                   <div className="card-footer enhanced-footer">
-                    {/* Beautiful notification positioned above the refresh button */}
                     {showNotification && (
                       <div className="refresh-notification enhanced-notification">
                         <div className="notification-content">
@@ -477,14 +427,12 @@ export default function App() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="flex justify-center items-center p-4 footer-glass">
         <p className="text-sm">© {new Date().getFullYear()} Devsaround</p>
       </footer>
     </div>
   );
 
-  // Helper function to get temperature class for color coding
   function getTemperatureClass(temp: number): string {
     if (temp >= 30) return 'hot';
     if (temp >= 20) return 'warm';

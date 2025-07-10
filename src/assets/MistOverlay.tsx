@@ -12,7 +12,6 @@ const MistOverlay = () => {
                 </linearGradient>
             </defs>
 
-            {/* Horizontal mist layers */}
             <g className="animate-[mistFlow_15s_linear_infinite]">
                 <rect x="0" y="20" width="100%" height="8" fill="url(#mistGradient)" />
                 <rect x="0" y="40" width="100%" height="6" fill="url(#mistGradient)" opacity="0.7" />

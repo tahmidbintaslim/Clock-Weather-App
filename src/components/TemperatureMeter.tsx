@@ -4,27 +4,22 @@ interface TemperatureMeterProps {
 }
 
 const TemperatureMeter = ({ temperature, className = "" }: TemperatureMeterProps) => {
-    // Calculate temperature level (0-100) for visualization
-    // Range: -20°C to 50°C mapped to 0-100%
     const tempLevel = Math.max(0, Math.min(100, ((temperature + 20) / 70) * 100));
 
-    // Determine color based on temperature
     const getTemperatureColor = () => {
-        if (temperature <= 0) return "#60A5FA"; // Blue
-        if (temperature <= 10) return "#34D399"; // Green
-        if (temperature <= 20) return "#FCD34D"; // Yellow
-        if (temperature <= 30) return "#FB923C"; // Orange
-        return "#EF4444"; // Red
+        if (temperature <= 0) return "#60A5FA";
+        if (temperature <= 10) return "#34D399";
+        if (temperature <= 20) return "#FCD34D";
+        if (temperature <= 30) return "#FB923C";
+        return "#EF4444";
     };
 
     const temperatureColor = getTemperatureColor();
 
     return (
         <div className={`flex items-center space-x-3 ${className}`}>
-            {/* Temperature Meter */}
             <div className="relative">
                 <svg width="24" height="80" viewBox="0 0 24 80" className="drop-shadow-sm">
-                    {/* Thermometer tube */}
                     <rect
                         x="8"
                         y="10"
@@ -38,10 +33,9 @@ const TemperatureMeter = ({ temperature, className = "" }: TemperatureMeterProps
                         strokeWidth="1"
                     />
 
-                    {/* Temperature fill */}
                     <rect
                         x="9"
-                        y={60 - (tempLevel * 0.48)} // Scale to fit tube height
+                        y={60 - (tempLevel * 0.48)}
                         width="6"
                         height={tempLevel * 0.48}
                         rx="3"
@@ -49,7 +43,6 @@ const TemperatureMeter = ({ temperature, className = "" }: TemperatureMeterProps
                         className="transition-all duration-1000 ease-out"
                     />
 
-                    {/* Thermometer bulb */}
                     <circle
                         cx="12"
                         cy="68"
@@ -61,21 +54,18 @@ const TemperatureMeter = ({ temperature, className = "" }: TemperatureMeterProps
                         className="transition-all duration-1000 ease-out"
                     />
 
-                    {/* Temperature marks */}
                     <g stroke="currentColor" strokeOpacity="0.6" strokeWidth="1">
-                        <line x1="16" y1="15" x2="19" y2="15" /> {/* 40°C */}
-                        <line x1="16" y1="25" x2="18" y2="25" /> {/* 30°C */}
-                        <line x1="16" y1="35" x2="19" y2="35" /> {/* 20°C */}
-                        <line x1="16" y1="45" x2="18" y2="45" /> {/* 10°C */}
-                        <line x1="16" y1="55" x2="19" y2="55" /> {/* 0°C */}
+                        <line x1="16" y1="15" x2="19" y2="15" />
+                        <line x1="16" y1="25" x2="18" y2="25" />
+                        <line x1="16" y1="35" x2="19" y2="35" />
+                        <line x1="16" y1="45" x2="18" y2="45" />
+                        <line x1="16" y1="55" x2="19" y2="55" />
                     </g>
                 </svg>
             </div>
 
-            {/* Barometer/Pressure Indicator */}
             <div className="relative">
                 <svg width="40" height="40" viewBox="0 0 40 40" className="drop-shadow-sm">
-                    {/* Barometer circle */}
                     <circle
                         cx="20"
                         cy="20"
@@ -87,9 +77,7 @@ const TemperatureMeter = ({ temperature, className = "" }: TemperatureMeterProps
                         strokeWidth="2"
                     />
 
-                    {/* Pressure scale marks */}
                     <g stroke="currentColor" strokeOpacity="0.6" strokeWidth="1" fill="currentColor" fillOpacity="0.8">
-                        {/* Major marks every 45 degrees */}
                         {[0, 45, 90, 135, 180, 225, 270, 315].map((angle, index) => {
                             const radian = (angle * Math.PI) / 180;
                             const x1 = 20 + 15 * Math.cos(radian);
@@ -110,7 +98,6 @@ const TemperatureMeter = ({ temperature, className = "" }: TemperatureMeterProps
                         })}
                     </g>
 
-                    {/* Pressure needle */}
                     <g transform={`rotate(${(tempLevel * 2.7) - 135} 20 20)`}>
                         <line
                             x1="20"
@@ -131,7 +118,6 @@ const TemperatureMeter = ({ temperature, className = "" }: TemperatureMeterProps
                         />
                     </g>
 
-                    {/* Center labels */}
                     <text
                         x="20"
                         y="32"

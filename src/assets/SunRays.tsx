@@ -12,7 +12,6 @@ const SunRays = () => {
                 </radialGradient>
             </defs>
 
-            {/* Central sun */}
             <circle
                 cx="50%"
                 cy="40%"
@@ -21,7 +20,6 @@ const SunRays = () => {
                 className="animate-[sunPulse_4s_ease-in-out_infinite]"
             />
 
-            {/* Sun rays */}
             <g className="animate-[sunRotate_20s_linear_infinite]" transform-origin="50% 40%">
                 {[...Array(12)].map((_, i) => (
                     <line
@@ -38,7 +36,6 @@ const SunRays = () => {
                 ))}
             </g>
 
-            {/* Sparkles */}
             <g className="animate-[sparkle_3s_ease-in-out_infinite]">
                 <circle cx="30%" cy="25%" r="2" fill="yellow" opacity="0.8" />
                 <circle cx="70%" cy="30%" r="1.5" fill="yellow" opacity="0.6" />

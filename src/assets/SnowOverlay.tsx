@@ -14,7 +14,6 @@ const SnowOverlay = () => {
                 </g>
             </defs>
 
-            {/* Animated snowflakes */}
             <g className="animate-[snowFall_8s_linear_infinite]">
                 <use href="#snowflake" x="20" y="0" />
                 <use href="#snowflake" x="80" y="-20" />

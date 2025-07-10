@@ -12,7 +12,6 @@ const ScatteredCloudOverlay = () => {
                 </g>
             </defs>
 
-            {/* Scattered clouds with more spacing */}
             <g className="animate-cloud-float">
                 <use href="#scatteredCloud" x="0" y="30" />
                 <use href="#scatteredCloud" x="120" y="20" transform="scale(0.8)" />
@@ -24,7 +23,6 @@ const ScatteredCloudOverlay = () => {
                 <use href="#scatteredCloud" x="320" y="35" transform="scale(0.9)" />
             </g>
 
-            {/* Sun rays peeking through for scattered clouds */}
             <g className="animate-sun-peek" opacity="0.5">
                 <line x1="100" y1="0" x2="100" y2="25" stroke="yellow" strokeWidth="2" opacity="0.6" />
                 <line x1="150" y1="0" x2="150" y2="20" stroke="yellow" strokeWidth="1.5" opacity="0.5" />

@@ -15,7 +15,6 @@ const ThunderstormOverlay = () => {
                 </g>
             </defs>
 
-            {/* Lightning bolts with random timing */}
             <g className="animate-[lightning_3s_ease-in-out_infinite]">
                 <use href="#lightning" x="30" y="20" transform="scale(1.2)" />
             </g>
@@ -28,7 +27,6 @@ const ThunderstormOverlay = () => {
                 <use href="#lightning" x="130" y="25" transform="scale(1.1)" />
             </g>
 
-            {/* Dark clouds for thunderstorm */}
             <g className="opacity-60">
                 <ellipse cx="50" cy="10" rx="25" ry="12" fill="#2d3748" />
                 <ellipse cx="80" cy="8" rx="20" ry="10" fill="#1a202c" />

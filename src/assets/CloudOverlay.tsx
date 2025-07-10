@@ -12,7 +12,6 @@ const CloudOverlay = () => {
                 </g>
             </defs>
 
-            {/* Multiple clouds with different animations */}
             <g className="animate-cloud-float">
                 <use href="#cloud" x="0" y="20" />
                 <use href="#cloud" x="80" y="10" transform="scale(0.8)" />

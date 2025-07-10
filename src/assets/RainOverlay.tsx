@@ -10,7 +10,6 @@ const RainOverlay = () => {
                     <line x1="7" y1="0" x2="7" y2="15" stroke="lightblue" strokeWidth="1" opacity="0.6" />
                     <line x1="12" y1="0" x2="12" y2="20" stroke="lightblue" strokeWidth="1.2" opacity="0.7" />
                 </pattern>
-
                 <pattern id="heavyRain" width="12" height="18" patternUnits="userSpaceOnUse">
                     <line x1="1" y1="0" x2="1" y2="16" stroke="lightblue" strokeWidth="2" opacity="0.9" />
                     <line x1="4" y1="0" x2="4" y2="14" stroke="lightblue" strokeWidth="1.5" opacity="0.8" />
@@ -18,8 +17,6 @@ const RainOverlay = () => {
                     <line x1="10" y1="0" x2="10" y2="15" stroke="lightblue" strokeWidth="1.8" opacity="0.7" />
                 </pattern>
             </defs>
-
-            {/* Multiple rain layers for depth */}
             <rect
                 width="100%"
                 height="100%"
@@ -33,8 +30,6 @@ const RainOverlay = () => {
                 className="animate-rain-drop-delayed"
                 opacity="0.6"
             />
-
-            {/* Rain splashes */}
             <g className="animate-rain-splash">
                 <ellipse cx="20%" cy="90%" rx="3" ry="1" fill="lightblue" opacity="0.4" />
                 <ellipse cx="45%" cy="95%" rx="2" ry="0.8" fill="lightblue" opacity="0.3" />
