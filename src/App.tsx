@@ -5,16 +5,12 @@ import ScatteredCloudOverlay from "@/assets/ScatteredCloudOverlay";
 import SnowOverlay from "@/assets/SnowOverlay";
 import SunRays from "@/assets/SunRays";
 import ThunderstormOverlay from "@/assets/ThunderstormOverlay";
+import CountrySelector, { Zone } from "@/components/CountrySelector";
 import TemperatureMeter from "@/components/TemperatureMeter";
 import { Button } from "@/components/ui/button";
 import axios from "axios";
 import { useEffect, useState } from "react";
 
-interface Zone {
-  label: string;
-  tz: string;
-  city: string;
-}
 interface WeatherInfo {
   temp: number;
   desc: string;
@@ -22,30 +18,65 @@ interface WeatherInfo {
   main: string;
 }
 
-const zones: Zone[] = [
-  { label: "Chile (Santiago)", tz: "America/Santiago", city: "Santiago,CL" },
-  { label: "Bangladesh (Dhaka)", tz: "Asia/Dhaka", city: "Dhaka,BD" },
-  { label: "Thailand (Bangkok)", tz: "Asia/Bangkok", city: "Bangkok,TH" },
-];
-
 export default function App() {
+  const [selectedZones, setSelectedZones] = useState<Zone[]>([
+    { label: "Chile (Santiago)", tz: "America/Santiago", city: "Santiago,CL" },
+    { label: "Bangladesh (Dhaka)", tz: "Asia/Dhaka", city: "Dhaka,BD" },
+    { label: "Thailand (Bangkok)", tz: "Asia/Bangkok", city: "Bangkok,TH" },
+  ]);
   const [times, setTimes] = useState<Record<string, string>>({});
-  const [weather, setWeather] = useState<Record<string, WeatherInfo | null>>(
-    zones.reduce((a, z) => ({ ...a, [z.label]: null }), {})
-  );
+  const [weather, setWeather] = useState<Record<string, WeatherInfo | null>>({});
   const [currentTheme, setCurrentTheme] = useState<string>("light");
-  const [weatherLoading, setWeatherLoading] = useState<Record<string, boolean>>(
-    zones.reduce((a, z) => ({ ...a, [z.label]: true }), {})
-  );
-  const [notifications, setNotifications] = useState<Record<string, boolean>>(
-    zones.reduce((a, z) => ({ ...a, [z.label]: false }), {})
-  );
+  const [weatherLoading, setWeatherLoading] = useState<Record<string, boolean>>({});
+  const [notifications, setNotifications] = useState<Record<string, boolean>>({});
+
+  // Update state objects when selectedZones changes
+  useEffect(() => {
+    const initialWeather = selectedZones.reduce((a, z) => ({ ...a, [z.label]: null }), {});
+    const initialLoading = selectedZones.reduce((a, z) => ({ ...a, [z.label]: true }), {});
+    const initialNotifications = selectedZones.reduce((a, z) => ({ ...a, [z.label]: false }), {});
+
+    setWeather(initialWeather);
+    setWeatherLoading(initialLoading);
+    setNotifications(initialNotifications);
+  }, [selectedZones]);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "light";
     setCurrentTheme(savedTheme);
     document.documentElement.setAttribute("data-theme", savedTheme);
   }, []);
+
+  const handleAddCountry = (zone: Zone) => {
+    if (selectedZones.length < 3) {
+      setSelectedZones([...selectedZones, zone]);
+    }
+  };
+
+  const handleRemoveCountry = (zone: Zone) => {
+    setSelectedZones(selectedZones.filter((z) => z.label !== zone.label));
+    // Clean up state for removed zone
+    setWeather(prev => {
+      const newWeather = { ...prev };
+      delete newWeather[zone.label];
+      return newWeather;
+    });
+    setWeatherLoading(prev => {
+      const newLoading = { ...prev };
+      delete newLoading[zone.label];
+      return newLoading;
+    });
+    setNotifications(prev => {
+      const newNotifications = { ...prev };
+      delete newNotifications[zone.label];
+      return newNotifications;
+    });
+    setTimes(prev => {
+      const newTimes = { ...prev };
+      delete newTimes[zone.label];
+      return newTimes;
+    });
+  };
 
   const handleThemeChange = (theme: string) => {
     setCurrentTheme(theme);
@@ -60,16 +91,13 @@ export default function App() {
       setWeatherLoading((prev) => ({ ...prev, [zone.label]: false }));
       return;
     }
-
     try {
       setWeatherLoading((prev) => ({ ...prev, [zone.label]: true }));
-
       const res = await axios.get(
         "https://api.openweathermap.org/data/2.5/weather",
         { params: { q: zone.city, units: "metric", appid: key } }
       );
       const w = res.data;
-
       setWeather((prev) => ({
         ...prev,
         [zone.label]: {
@@ -79,13 +107,10 @@ export default function App() {
           main: w.weather[0].main.toLowerCase(),
         },
       }));
-
       setNotifications((prev) => ({ ...prev, [zone.label]: true }));
-
       setTimeout(() => {
         setNotifications((prev) => ({ ...prev, [zone.label]: false }));
       }, 3000);
-
     } catch {
       setWeather((prev) => ({ ...prev, [zone.label]: null }));
     } finally {
@@ -97,7 +122,7 @@ export default function App() {
     const tick = () => {
       const now = new Date();
       const t: Record<string, string> = {};
-      zones.forEach(({ label, tz }) => {
+      selectedZones.forEach(({ label, tz }) => {
         const timeString = now.toLocaleTimeString("en-US", {
           timeZone: tz,
           hour: "2-digit",
@@ -124,13 +149,13 @@ export default function App() {
     tick();
     const id = setInterval(tick, 1000);
     return () => clearInterval(id);
-  }, []);
+  }, [selectedZones]);
 
   useEffect(() => {
     const key = import.meta.env.VITE_OPEN_WEATHER_API_KEY;
 
     if (!key) {
-      zones.forEach(({ label }) => {
+      selectedZones.forEach(({ label }) => {
         setWeatherLoading((prev) => ({ ...prev, [label]: false }));
         setWeather((prev) => ({ ...prev, [label]: null }));
       });
@@ -163,8 +188,8 @@ export default function App() {
       }
     };
 
-    zones.forEach(fetchWeatherForCity);
-  }, []);
+    selectedZones.forEach(fetchWeatherForCity);
+  }, [selectedZones]);
 
   const getWeatherOverlay = (main?: string, desc?: string, timezone?: string) => {
     if (!main) return null;
@@ -266,10 +291,15 @@ export default function App() {
           </ul>
         </div>
       </header>
-
-      <main className="flex-1 flex items-center justify-center p-4">
+      <main className="flex-1 flex flex-col items-center justify-center p-4">
+        <CountrySelector
+          selected={selectedZones}
+          onAdd={handleAddCountry}
+          onRemove={handleRemoveCountry}
+          max={3}
+        />
         <div className="grid gap-8 grid-cols-1 lg:grid-cols-3 w-full max-w-7xl">
-          {zones.map((zone) => {
+          {selectedZones.map((zone) => {
             const w = weather[zone.label];
             const isLoading = weatherLoading[zone.label];
             const showNotification = notifications[zone.label];
@@ -322,7 +352,7 @@ export default function App() {
                         {isNight ? (
                           <div className="indicator-content">
                             <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M17.293 13.293A8 8 0 716.707 2.707a8.001 8.001 0 1010.586 10.586z" clipRule="evenodd" />
+                              <path fillRule="evenodd" d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z" clipRule="evenodd" />
                             </svg>
                             <span>Night</span>
                           </div>
@@ -402,7 +432,7 @@ export default function App() {
                     )}
 
                     <Button
-                      className="refresh-button enhanced-button"
+                      className={`refresh-button enhanced-button group ${isNight ? 'night-button' : 'day-button'}`}
                       onClick={() => refreshWeatherForCity(zone)}
                       disabled={isLoading}
                       aria-label={`Refresh weather for ${zone.label}`}

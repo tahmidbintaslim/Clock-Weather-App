@@ -792,6 +792,32 @@
   gap: 8px;
 }
 
+/* Enhanced text visibility for night/day buttons */
+.refresh-button.night-button .button-content {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.refresh-button.day-button .button-content {
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+/* Weather-specific button styling based on conditions */
+.refresh-button.rain-weather {
+  background: rgba(173, 216, 230, 0.3) !important;
+  border: 1px solid rgba(173, 216, 230, 0.5) !important;
+}
+
+.refresh-button.snow-weather {
+  background: rgba(255, 255, 255, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+}
+
+.refresh-button.thunderstorm-weather {
+  background: rgba(75, 0, 130, 0.3) !important;
+  border: 1px solid rgba(75, 0, 130, 0.5) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
 /* Glassmorphism for header and footer */
 .header-glass {
   background: rgba(255, 255, 255, 0.1);
@@ -885,14 +911,14 @@
 }
 
 [data-theme="light"] .refresh-button {
-  background: rgba(0, 0, 0, 0.05) !important;
-  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  background: rgba(255, 255, 255, 0.4) !important;
+  border: 1px solid rgba(255, 255, 255, 0.5) !important;
   color: var(--color-base-content) !important;
 }
 
 [data-theme="cupcake"] .refresh-button {
-  background: rgba(0, 0, 0, 0.08) !important;
-  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  background: rgba(255, 255, 255, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
   color: var(--color-base-content) !important;
 }
 
@@ -908,34 +934,72 @@
   color: var(--color-base-content) !important;
 }
 
-/* Theme-aware refresh button hover states */
-[data-theme="dark"] .refresh-button:hover:not(:disabled) {
+/* Night-specific refresh button styling for better visibility */
+.refresh-button.night-button {
   background: rgba(255, 255, 255, 0.2) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-  color: var(--color-primary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+  box-shadow: 0 8px 32px 0 rgba(255, 255, 255, 0.1) !important;
 }
 
-[data-theme="light"] .refresh-button:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.1) !important;
-  border-color: rgba(0, 0, 0, 0.2) !important;
-  color: var(--color-primary) !important;
+.refresh-button.night-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 1) !important;
+  box-shadow: 0 12px 40px 0 rgba(255, 255, 255, 0.2) !important;
+  transform: translateY(-2px);
 }
 
-[data-theme="cupcake"] .refresh-button:hover:not(:disabled) {
-  background: rgba(0, 0, 0, 0.15) !important;
-  border-color: rgba(0, 0, 0, 0.25) !important;
-  color: var(--color-primary) !important;
+/* Day-specific refresh button styling */
+.refresh-button.day-button {
+  background: rgba(255, 255, 255, 0.5) !important;
+  border: 1px solid rgba(255, 255, 255, 0.6) !important;
+  color: var(--color-base-content) !important;
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1) !important;
 }
 
-[data-theme="corporate"] .refresh-button:hover:not(:disabled) {
+.refresh-button.day-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.7) !important;
+  border-color: rgba(255, 255, 255, 0.8) !important;
+  color: var(--color-primary) !important;
+  box-shadow: 0 12px 40px 0 rgba(0, 0, 0, 0.15) !important;
+  transform: translateY(-2px);
+}
+
+/* Theme overrides for night/day buttons */
+[data-theme="dark"] .refresh-button.night-button {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border: 1px solid rgba(255, 255, 255, 0.25) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="dark"] .refresh-button.day-button {
   background: rgba(255, 255, 255, 0.2) !important;
-  border-color: rgba(255, 255, 255, 0.3) !important;
-  color: var(--color-primary) !important;
+  border: 1px solid rgba(255, 255, 255, 0.3) !important;
+  color: var(--color-base-content) !important;
 }
 
-[data-theme="synthwave"] .refresh-button:hover:not(:disabled) {
+[data-theme="light"] .refresh-button.night-button {
+  background: rgba(255, 255, 255, 0.3) !important;
+  border: 1px solid rgba(255, 255, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+[data-theme="light"] .refresh-button.day-button {
+  background: rgba(255, 255, 255, 0.6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.7) !important;
+  color: var(--color-base-content) !important;
+}
+
+[data-theme="synthwave"] .refresh-button.night-button {
   background: rgba(255, 0, 255, 0.2) !important;
-  border-color: rgba(255, 0, 255, 0.5) !important;
+  border: 1px solid rgba(255, 0, 255, 0.4) !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+[data-theme="synthwave"] .refresh-button.day-button {
+  background: rgba(255, 0, 255, 0.15) !important;
+  border: 1px solid rgba(255, 0, 255, 0.3) !important;
   color: var(--color-base-content) !important;
 }
 
@@ -1016,4 +1080,35 @@
 
 .weather-card-container.group:hover .hover-overlay {
   opacity: 1;
+}
+
+/* Country Selector Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fadeIn {
+  animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slideDown {
+  animation: slideDown 0.2s ease-out;
 }
