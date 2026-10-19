@@ -1,7 +1,7 @@
 {
   "name": "world-clock-weather-app",
   "version": "1.0.0",
-  "description": "A stunning world clock and weather application with glassmorphism design",
+  "description": "World clock and current weather for up to three cities, with an animated sky for each",
   "private": true,
   "type": "module",
   "keywords": [
@@ -17,12 +17,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/Clock-Weather-App.git"
+    "url": "https://github.com/tahmidbintaslim/clock-weather-app.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/Clock-Weather-App/issues"
+    "url": "https://github.com/tahmidbintaslim/clock-weather-app/issues"
   },
-  "homepage": "https://github.com/your-username/Clock-Weather-App#readme",
+  "homepage": "https://github.com/tahmidbintaslim/clock-weather-app#readme",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
