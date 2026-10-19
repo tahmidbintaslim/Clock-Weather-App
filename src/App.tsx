@@ -9,6 +9,7 @@ import CountrySelector from "@/components/CountrySelector";
 import TemperatureMeter from "@/components/TemperatureMeter";
 import { Button } from "@/components/ui/button";
 import type { Zone } from "@/data/countries";
+import { formatGmtOffset, isNightAt } from "@/lib/time";
 import {
   failureOf,
   fetchWeather,
@@ -131,13 +132,7 @@ export default function App() {
           weekday: "long",
         });
 
-        const tempDate = new Date(now.toLocaleString("en-US", { timeZone: tz }));
-        const utcDate = new Date(now.toLocaleString("en-US", { timeZone: "UTC" }));
-        const offsetMs = tempDate.getTime() - utcDate.getTime();
-        const offsetHours = Math.round(offsetMs / (1000 * 60 * 60));
-        const gmtOffset = offsetHours >= 0 ? `+${offsetHours}` : `${offsetHours}`;
-
-        t[label] = `${dayString}|${timeString} (GMT${gmtOffset})`;
+        t[label] = `${dayString}|${timeString} (${formatGmtOffset(tz, now)})`;
       });
       setTimes(t);
     };
@@ -163,17 +158,11 @@ export default function App() {
     selectedZones.forEach(fetchWeatherForCity);
   }, [selectedZones]);
 
-  const getWeatherOverlay = (main?: string, desc?: string, timezone?: string) => {
+  const getWeatherOverlay = (main: string | undefined, desc: string | undefined, isNight: boolean) => {
     if (!main) return null;
 
     const condition = main.toLowerCase();
     const description = desc?.toLowerCase() || "";
-
-    const isNight = timezone ? (() => {
-      const now = new Date();
-      const hour = new Date(now.toLocaleString("en-US", { timeZone: timezone })).getHours();
-      return hour < 6 || hour >= 18;
-    })() : false;
 
     if (condition.includes("rain") || condition.includes("drizzle")) {
       return <RainOverlay />;
@@ -275,11 +264,8 @@ export default function App() {
             const w = weather[zone.label];
             const isLoading = weatherLoading[zone.label];
             const showNotification = notifications[zone.label];
-            const overlay = getWeatherOverlay(w?.main, w?.description, zone.tz);
-
-            const now = new Date();
-            const hour = new Date(now.toLocaleString("en-US", { timeZone: zone.tz })).getHours();
-            const isNight = hour < 6 || hour >= 18;
+            const isNight = isNightAt(zone.tz, new Date(), w);
+            const overlay = getWeatherOverlay(w?.main, w?.description, isNight);
 
             return (
               <div key={zone.label} className="weather-card-container group">
@@ -362,7 +348,7 @@ export default function App() {
                               <span className="degree-symbol">°C</span>
                             </div>
                             <div className="feels-like">
-                              Feels like {w.temp.toFixed(0)}°C
+                              Feels like {w.feelsLike.toFixed(0)}°C
                             </div>
                           </div>
                           <div className="weather-desc">{w.description}</div>
