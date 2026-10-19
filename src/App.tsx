@@ -8,7 +8,13 @@ import ThunderstormOverlay from "@/assets/ThunderstormOverlay";
 import CountrySelector from "@/components/CountrySelector";
 import TemperatureMeter from "@/components/TemperatureMeter";
 import { Button } from "@/components/ui/button";
-import type { Zone } from "@/data/countries";
+import { COUNTRY_OPTIONS, type Zone } from "@/data/countries";
+import {
+  CITIES_STORAGE_KEY,
+  initialCities,
+  serializeCities,
+  urlWithCities,
+} from "@/lib/cities";
 import { formatGmtOffset, isNightAt } from "@/lib/time";
 import {
   failureOf,
@@ -19,12 +25,32 @@ import {
 } from "@/lib/weather";
 import { useEffect, useState } from "react";
 
+const MAX_CITIES = 3;
+
+const DEFAULT_ZONES: Zone[] = [
+  { label: "Chile (Santiago)", tz: "America/Santiago", city: "Santiago,CL" },
+  { label: "Bangladesh (Dhaka)", tz: "Asia/Dhaka", city: "Dhaka,BD" },
+  { label: "Thailand (Bangkok)", tz: "Asia/Bangkok", city: "Bangkok,TH" },
+];
+
+function readStoredCities(): string | null {
+  try {
+    return window.localStorage.getItem(CITIES_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
 export default function App() {
-  const [selectedZones, setSelectedZones] = useState<Zone[]>([
-    { label: "Chile (Santiago)", tz: "America/Santiago", city: "Santiago,CL" },
-    { label: "Bangladesh (Dhaka)", tz: "Asia/Dhaka", city: "Dhaka,BD" },
-    { label: "Thailand (Bangkok)", tz: "Asia/Bangkok", city: "Bangkok,TH" },
-  ]);
+  const [selectedZones, setSelectedZones] = useState<Zone[]>(() =>
+    initialCities({
+      search: window.location.search,
+      stored: readStoredCities(),
+      options: COUNTRY_OPTIONS,
+      defaults: DEFAULT_ZONES,
+      max: MAX_CITIES,
+    })
+  );
   const [times, setTimes] = useState<Record<string, string>>({});
   const [weather, setWeather] = useState<Record<string, WeatherInfo | null>>({});
   const [currentTheme, setCurrentTheme] = useState<string>("light");
@@ -44,6 +70,21 @@ export default function App() {
     setWeatherErrors({});
   }, [selectedZones]);
 
+  // Keep the chosen cities across reloads, and in the address bar so the
+  // page URL can be shared.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CITIES_STORAGE_KEY, serializeCities(selectedZones));
+    } catch {
+      // Storage can be blocked (private mode, site settings); the URL still works.
+    }
+    const { pathname, search, hash, href } = window.location;
+    const next = urlWithCities(href, selectedZones);
+    if (next !== `${pathname}${search}${hash}`) {
+      window.history.replaceState(window.history.state, "", next);
+    }
+  }, [selectedZones]);
+
   useEffect(() => {
     const savedTheme = localStorage.getItem("theme") || "light";
     setCurrentTheme(savedTheme);
@@ -51,7 +92,7 @@ export default function App() {
   }, []);
 
   const handleAddCountry = (zone: Zone) => {
-    if (selectedZones.length < 3) {
+    if (selectedZones.length < MAX_CITIES) {
       setSelectedZones([...selectedZones, zone]);
     }
   };
@@ -257,7 +298,7 @@ export default function App() {
           selected={selectedZones}
           onAdd={handleAddCountry}
           onRemove={handleRemoveCountry}
-          max={3}
+          max={MAX_CITIES}
         />
         <div className="grid gap-8 grid-cols-1 lg:grid-cols-3 w-full max-w-7xl">
           {selectedZones.map((zone) => {
