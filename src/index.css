@@ -1,5 +1,8 @@
 /* src/index.css */
 @import "tailwindcss";
+/* Server code and tests: keep their strings out of the class scan. */
+@source not "../api";
+@source not "../tests";
 @plugin "daisyui" {
   themes: light --default, dark --prefersdark, cupcake, corporate, synthwave;
 }

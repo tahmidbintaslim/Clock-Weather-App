@@ -5,18 +5,18 @@ import ScatteredCloudOverlay from "@/assets/ScatteredCloudOverlay";
 import SnowOverlay from "@/assets/SnowOverlay";
 import SunRays from "@/assets/SunRays";
 import ThunderstormOverlay from "@/assets/ThunderstormOverlay";
-import CountrySelector, { Zone } from "@/components/CountrySelector";
+import CountrySelector from "@/components/CountrySelector";
 import TemperatureMeter from "@/components/TemperatureMeter";
 import { Button } from "@/components/ui/button";
-import axios from "axios";
+import type { Zone } from "@/data/countries";
+import {
+  failureOf,
+  fetchWeather,
+  weatherFailureHint,
+  type WeatherFailure,
+  type WeatherInfo,
+} from "@/lib/weather";
 import { useEffect, useState } from "react";
-
-interface WeatherInfo {
-  temp: number;
-  desc: string;
-  icon: string;
-  main: string;
-}
 
 export default function App() {
   const [selectedZones, setSelectedZones] = useState<Zone[]>([
@@ -29,6 +29,7 @@ export default function App() {
   const [currentTheme, setCurrentTheme] = useState<string>("light");
   const [weatherLoading, setWeatherLoading] = useState<Record<string, boolean>>({});
   const [notifications, setNotifications] = useState<Record<string, boolean>>({});
+  const [weatherErrors, setWeatherErrors] = useState<Record<string, WeatherFailure>>({});
 
   // Update state objects when selectedZones changes
   useEffect(() => {
@@ -39,6 +40,7 @@ export default function App() {
     setWeather(initialWeather);
     setWeatherLoading(initialLoading);
     setNotifications(initialNotifications);
+    setWeatherErrors({});
   }, [selectedZones]);
 
   useEffect(() => {
@@ -71,6 +73,11 @@ export default function App() {
       delete newNotifications[zone.label];
       return newNotifications;
     });
+    setWeatherErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[zone.label];
+      return newErrors;
+    });
     setTimes(prev => {
       const newTimes = { ...prev };
       delete newTimes[zone.label];
@@ -85,34 +92,22 @@ export default function App() {
   };
 
   const refreshWeatherForCity = async (zone: Zone) => {
-    const key = import.meta.env.VITE_OPEN_WEATHER_API_KEY;
-    if (!key) {
-      setWeather((prev) => ({ ...prev, [zone.label]: null }));
-      setWeatherLoading((prev) => ({ ...prev, [zone.label]: false }));
-      return;
-    }
     try {
       setWeatherLoading((prev) => ({ ...prev, [zone.label]: true }));
-      const res = await axios.get(
-        "https://api.openweathermap.org/data/2.5/weather",
-        { params: { q: zone.city, units: "metric", appid: key } }
-      );
-      const w = res.data;
-      setWeather((prev) => ({
-        ...prev,
-        [zone.label]: {
-          temp: w.main.temp,
-          desc: w.weather[0].description,
-          icon: w.weather[0].icon,
-          main: w.weather[0].main.toLowerCase(),
-        },
-      }));
+      const info = await fetchWeather(zone.city);
+      setWeather((prev) => ({ ...prev, [zone.label]: info }));
+      setWeatherErrors((prev) => {
+        const next = { ...prev };
+        delete next[zone.label];
+        return next;
+      });
       setNotifications((prev) => ({ ...prev, [zone.label]: true }));
       setTimeout(() => {
         setNotifications((prev) => ({ ...prev, [zone.label]: false }));
       }, 3000);
-    } catch {
+    } catch (error) {
       setWeather((prev) => ({ ...prev, [zone.label]: null }));
+      setWeatherErrors((prev) => ({ ...prev, [zone.label]: failureOf(error) }));
     } finally {
       setWeatherLoading((prev) => ({ ...prev, [zone.label]: false }));
     }
@@ -152,37 +147,14 @@ export default function App() {
   }, [selectedZones]);
 
   useEffect(() => {
-    const key = import.meta.env.VITE_OPEN_WEATHER_API_KEY;
-
-    if (!key) {
-      selectedZones.forEach(({ label }) => {
-        setWeatherLoading((prev) => ({ ...prev, [label]: false }));
-        setWeather((prev) => ({ ...prev, [label]: null }));
-      });
-      return;
-    }
-
     const fetchWeatherForCity = async ({ label, city }: Zone) => {
       try {
         setWeatherLoading((prev) => ({ ...prev, [label]: true }));
-
-        const res = await axios.get(
-          "https://api.openweathermap.org/data/2.5/weather",
-          { params: { q: city, units: "metric", appid: key } }
-        );
-        const w = res.data;
-
-        setWeather((prev) => ({
-          ...prev,
-          [label]: {
-            temp: w.main.temp,
-            desc: w.weather[0].description,
-            icon: w.weather[0].icon,
-            main: w.weather[0].main.toLowerCase(),
-          },
-        }));
-      } catch {
+        const info = await fetchWeather(city);
+        setWeather((prev) => ({ ...prev, [label]: info }));
+      } catch (error) {
         setWeather((prev) => ({ ...prev, [label]: null }));
+        setWeatherErrors((prev) => ({ ...prev, [label]: failureOf(error) }));
       } finally {
         setWeatherLoading((prev) => ({ ...prev, [label]: false }));
       }
@@ -303,7 +275,7 @@ export default function App() {
             const w = weather[zone.label];
             const isLoading = weatherLoading[zone.label];
             const showNotification = notifications[zone.label];
-            const overlay = getWeatherOverlay(w?.main, w?.desc, zone.tz);
+            const overlay = getWeatherOverlay(w?.main, w?.description, zone.tz);
 
             const now = new Date();
             const hour = new Date(now.toLocaleString("en-US", { timeZone: zone.tz })).getHours();
@@ -399,7 +371,7 @@ export default function App() {
                               Feels like {w.temp.toFixed(0)}°C
                             </div>
                           </div>
-                          <div className="weather-desc">{w.desc}</div>
+                          <div className="weather-desc">{w.description}</div>
                           <TemperatureMeter temperature={w.temp} className="justify-center mt-3" />
                         </>
                       ) : (
@@ -409,10 +381,7 @@ export default function App() {
                           </svg>
                           <span>Weather unavailable</span>
                           <div className="retry-hint">
-                            {import.meta.env.VITE_OPEN_WEATHER_API_KEY === 'demo_key_replace_with_real_key' || !import.meta.env.VITE_OPEN_WEATHER_API_KEY
-                              ? 'Add your OpenWeatherMap API key to .env file'
-                              : 'Check your internet connection and try refreshing'
-                            }
+                            {weatherFailureHint(weatherErrors[zone.label])}
                           </div>
                         </div>
                       )}
