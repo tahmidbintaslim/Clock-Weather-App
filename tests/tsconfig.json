@@ -1,0 +1,12 @@
+{
+  // Tests run on Node's built-in test runner, which strips types but does
+  // not resolve extensionless or aliased imports, so test files import with
+  // explicit ".ts" paths. Kept out of the root config, which Vercel also uses
+  // to compile api/.
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "allowImportingTsExtensions": true,
+    "erasableSyntaxOnly": true
+  },
+  "include": ["./**/*.ts"]
+}
