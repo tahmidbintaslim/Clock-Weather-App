@@ -27,7 +27,7 @@ Local time and current weather for up to three cities, side by side. Each city g
 
 - `api/weather.ts` is a Vercel function. It reads `OPENWEATHER_API_KEY`, calls OpenWeather, and returns only the fields the app shows. The variable has no `VITE_` prefix, so Vite never copies it into the JavaScript bundle.
 - The function accepts one query parameter, `q`, and only for the 87 cities the picker offers, so it can't be used as a general OpenWeather proxy.
-- Successful answers carry `Cache-Control: s-maxage=600`, so Vercel's CDN answers repeat requests for 10 minutes. Each function instance also keeps the last answer per city for 10 minutes, so a URL spelled differently to skip the CDN copy does not cause another OpenWeather call.
+- Successful answers carry `Cache-Control: s-maxage=600`, so Vercel's CDN answers repeat requests for 10 minutes. Each function instance also keeps the last answer per city for 10 minutes, so respelling the URL to skip the CDN copy costs at most one OpenWeather call per city, per running instance, every 10 minutes.
 - The browser only calls `/api/weather?q=<city>`, never OpenWeather itself.
 
 ## Deploy to Vercel

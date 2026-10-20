@@ -17,7 +17,8 @@ export const PLACEHOLDER_API_KEY = "your_api_key_here";
 /**
  * The OpenWeather queries the city picker offers (`city` in
  * src/data/countries.ts). Only these reach OpenWeather, so the function is not
- * an open proxy and the CDN cache holds at most one entry per city.
+ * an open proxy and the per-instance memo below holds at most one entry per
+ * city.
  * tests/weather-api.test.ts fails when the two lists drift apart.
  */
 export const ALLOWED_CITIES: ReadonlySet<string> = new Set([
