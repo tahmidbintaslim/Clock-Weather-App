@@ -3,9 +3,12 @@ import { describe, it } from "node:test";
 import {
   ALLOWED_CITIES,
   CACHE_OK,
+  MEMO_ERROR_MS,
+  MEMO_OK_MS,
   PLACEHOLDER_API_KEY,
   handleWeatherRequest,
   toWeatherPayload,
+  type WeatherMemo,
 } from "../api/weather.ts";
 import { COUNTRY_OPTIONS } from "../src/data/countries.ts";
 
@@ -154,6 +157,108 @@ describe("handleWeatherRequest", () => {
     const upstream = fakeFetch(() => new Response("<html>", { status: 200 }));
     const res = await handleWeatherRequest(request("?q=Dhaka,BD"), { apiKey: KEY, fetchImpl: upstream.impl });
     assert.equal(res.status, 502);
+  });
+});
+
+describe("handleWeatherRequest with a per-instance memo", () => {
+  function clock(start = 1_000_000) {
+    let time = start;
+    return {
+      now: () => time,
+      advance: (ms: number) => {
+        time += ms;
+      },
+    };
+  }
+
+  it("makes one OpenWeather call for every spelling of a city", async () => {
+    const upstream = fakeFetch(() => Response.json(OPENWEATHER_BODY));
+    const memo: WeatherMemo = new Map();
+    const options = { apiKey: KEY, fetchImpl: upstream.impl, memo };
+
+    // The CDN keys on the raw URL, so each spelling is a CDN miss.
+    const spellings = ["?q=Dhaka,BD", "?q=Dhaka%2CBD", "?q=D%68aka%2cBD", "?q=%44haka,%42D"];
+    const bodies: unknown[] = [];
+    for (const query of spellings) {
+      const res = await handleWeatherRequest(request(query), options);
+      assert.equal(res.status, 200);
+      bodies.push(await res.json());
+    }
+    assert.equal(upstream.calls.length, 1);
+    assert.ok(bodies.every((body) => JSON.stringify(body) === JSON.stringify(bodies[0])));
+  });
+
+  it("shares one call between concurrent requests", async () => {
+    const upstream = fakeFetch(() => Response.json(OPENWEATHER_BODY));
+    const memo: WeatherMemo = new Map();
+    const responses = await Promise.all(
+      [1, 2, 3].map(() => handleWeatherRequest(request("?q=Dhaka,BD"), { apiKey: KEY, fetchImpl: upstream.impl, memo })),
+    );
+    assert.equal(upstream.calls.length, 1);
+    assert.deepEqual(responses.map((res) => res.status), [200, 200, 200]);
+  });
+
+  it("keeps an answer for 10 minutes and shortens the CDN copy as it ages", async () => {
+    const upstream = fakeFetch(() => Response.json(OPENWEATHER_BODY));
+    const memo: WeatherMemo = new Map();
+    const time = clock();
+    const options = { apiKey: KEY, fetchImpl: upstream.impl, memo, now: time.now };
+
+    const first = await handleWeatherRequest(request("?q=Dhaka,BD"), options);
+    assert.equal(first.headers.get("cache-control"), CACHE_OK);
+
+    time.advance(120_000);
+    const second = await handleWeatherRequest(request("?q=Dhaka,BD"), options);
+    assert.equal(upstream.calls.length, 1);
+    assert.match(second.headers.get("cache-control") ?? "", /s-maxage=480,/);
+
+    time.advance(MEMO_OK_MS - 120_000);
+    const third = await handleWeatherRequest(request("?q=Dhaka,BD"), options);
+    assert.equal(upstream.calls.length, 2);
+    assert.equal(third.headers.get("cache-control"), CACHE_OK);
+  });
+
+  it("keeps a 404 like an answer", async () => {
+    const upstream = fakeFetch(() => new Response("{}", { status: 404 }));
+    const memo: WeatherMemo = new Map();
+    const time = clock();
+    const options = { apiKey: KEY, fetchImpl: upstream.impl, memo, now: time.now };
+
+    assert.equal((await handleWeatherRequest(request("?q=Dhaka,BD"), options)).status, 404);
+    time.advance(MEMO_OK_MS - 1);
+    assert.equal((await handleWeatherRequest(request("?q=Dhaka%2CBD"), options)).status, 404);
+    assert.equal(upstream.calls.length, 1);
+  });
+
+  it("retries a failure only after 30 seconds", async () => {
+    const original = console.error;
+    console.error = () => {};
+    try {
+      const upstream = fakeFetch(() => new Response("{}", { status: 429 }));
+      const memo: WeatherMemo = new Map();
+      const time = clock();
+      const options = { apiKey: KEY, fetchImpl: upstream.impl, memo, now: time.now };
+
+      assert.equal((await handleWeatherRequest(request("?q=Dhaka,BD"), options)).status, 502);
+      time.advance(MEMO_ERROR_MS - 1);
+      const held = await handleWeatherRequest(request("?q=Dhaka,BD"), options);
+      assert.equal(held.status, 502);
+      assert.equal(held.headers.get("cache-control"), "no-store");
+      assert.equal(upstream.calls.length, 1);
+
+      time.advance(1);
+      await handleWeatherRequest(request("?q=Dhaka,BD"), options);
+      assert.equal(upstream.calls.length, 2);
+    } finally {
+      console.error = original;
+    }
+  });
+
+  it("does not use the memo before the key and the city are checked", async () => {
+    const memo: WeatherMemo = new Map();
+    await handleWeatherRequest(request("?q=Atlantis,XX"), { apiKey: KEY, fetchImpl: failingFetch(), memo });
+    await handleWeatherRequest(request("?q=Dhaka,BD"), { apiKey: "", fetchImpl: failingFetch(), memo });
+    assert.equal(memo.size, 0);
   });
 });
 
