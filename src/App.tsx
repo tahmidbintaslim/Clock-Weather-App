@@ -459,8 +459,19 @@ export default function App() {
         </div>
       </main>
 
-      <footer className="flex justify-center items-center p-4 footer-glass">
+      <footer className="flex flex-col sm:flex-row gap-1 sm:gap-3 justify-center items-center p-4 footer-glass">
         <p className="text-sm">© {new Date().getFullYear()} Devsaround</p>
+        <p className="text-sm">
+          Weather data by{" "}
+          <a
+            className="link"
+            href="https://openweathermap.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            OpenWeather
+          </a>
+        </p>
       </footer>
     </div>
   );
