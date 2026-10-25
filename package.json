@@ -17,12 +17,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tahmidbintaslim/clock-weather-app.git"
+    "url": "https://github.com/tahmidbintaslim/Clock-Weather-App.git"
   },
   "bugs": {
-    "url": "https://github.com/tahmidbintaslim/clock-weather-app/issues"
+    "url": "https://github.com/tahmidbintaslim/Clock-Weather-App/issues"
   },
-  "homepage": "https://github.com/tahmidbintaslim/clock-weather-app#readme",
+  "homepage": "https://github.com/tahmidbintaslim/Clock-Weather-App#readme",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
