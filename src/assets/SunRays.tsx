@@ -31,7 +31,9 @@ const SunRays = () => {
                         stroke="yellow"
                         strokeWidth="2"
                         opacity="0.6"
-                        transform={`rotate(${i * 30} 50% 40%)`}
+                        // SVG's transform attribute takes no percentages; CSS
+                        // transform-origin does (relative to the SVG viewport).
+                        style={{ transform: `rotate(${i * 30}deg)`, transformOrigin: "50% 40%" }}
                     />
                 ))}
             </g>

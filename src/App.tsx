@@ -308,6 +308,12 @@ export default function App() {
             const now = new Date();
             const hour = new Date(now.toLocaleString("en-US", { timeZone: zone.tz })).getHours();
             const isNight = hour < 6 || hour >= 18;
+            // The card's text sits on the sky, not on the page background, so
+            // its color follows the sky rather than the daisyUI theme: night,
+            // or a day under the rain or thunderstorm tint (.weather-sky in
+            // index.css). The cloud and snow tints stay light where the text is.
+            const darkSky =
+              isNight || ["rain", "thunderstorm"].includes(w?.main?.toLowerCase() ?? "");
 
             return (
               <div key={zone.label} className="weather-card-container group">
@@ -320,7 +326,7 @@ export default function App() {
                   </div>
                 )}
 
-                <div className="weather-card interactive-card">
+                <div className="weather-card interactive-card" data-sky={darkSky ? "dark" : "light"}>
                   <div className={`sky-bg ${isNight ? 'night-sky' : 'day-sky'}`}></div>
                   {w?.main && (
                     <div className={`weather-sky ${w.main.toLowerCase()}-sky`}></div>
