@@ -276,6 +276,22 @@
   background: rgba(255, 255, 255, 0.15);
 }
 
+/* Text on the card sits on the sky gradient, not on the page background,
+   so its ink follows the sky (App.tsx sets data-sky) instead of the
+   daisyUI theme: a light theme used to put dark text on the night sky,
+   and a dark theme light text on the day sky. */
+.weather-card[data-sky="light"] {
+  --sky-ink: #0f172a;
+}
+
+.weather-card[data-sky="dark"] {
+  --sky-ink: #f8fafc;
+}
+
+.weather-card[data-sky="dark"] .weather-text-container {
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+
 /* Sky backgrounds */
 .sky-bg {
   position: absolute;
@@ -465,7 +481,7 @@
   left: 0;
   right: 0;
   z-index: 10;
-  color: var(--color-base-content);
+  color: var(--sky-ink, var(--color-base-content));
   text-align: center;
   padding: 0 20px;
 }
@@ -481,7 +497,7 @@
 .city-name {
   font-size: 1.25rem;
   font-weight: bold;
-  color: var(--color-base-content);
+  color: var(--sky-ink, var(--color-base-content));
 }
 
 .day-display {
@@ -515,13 +531,13 @@
 
 .night-mode {
   background: rgba(59, 130, 246, 0.2) !important;
-  color: var(--color-base-content) !important;
+  color: var(--sky-ink, var(--color-base-content)) !important;
   border-color: rgba(59, 130, 246, 0.3) !important;
 }
 
 .day-mode {
   background: rgba(251, 191, 36, 0.2) !important;
-  color: var(--color-base-content) !important;
+  color: var(--sky-ink, var(--color-base-content)) !important;
   border-color: rgba(251, 191, 36, 0.3) !important;
 }
 
@@ -544,21 +560,21 @@
   font-weight: bold;
   line-height: 1;
   margin-bottom: 5px;
-  color: var(--color-base-content);
+  color: var(--sky-ink, var(--color-base-content));
 }
 
 .time-period {
   font-size: 1rem;
   font-weight: 600;
   opacity: 0.9;
-  color: var(--color-base-content);
+  color: var(--sky-ink, var(--color-base-content));
 }
 
 .timezone {
   font-size: 0.875rem;
   opacity: 0.8;
   margin-top: 5px;
-  color: var(--color-base-content);
+  color: var(--sky-ink, var(--color-base-content));
 }
 
 /* Weather info */
@@ -573,7 +589,7 @@
   gap: 10px;
   font-size: 0.875rem;
   opacity: 0.9;
-  color: var(--color-base-content);
+  color: var(--sky-ink, var(--color-base-content));
 }
 
 .temperature {
@@ -581,7 +597,7 @@
   font-weight: bold;
   line-height: 1;
   margin-bottom: 10px;
-  color: var(--color-base-content);
+  color: var(--sky-ink, var(--color-base-content));
 }
 
 .degree-symbol {
@@ -595,7 +611,7 @@
   text-transform: capitalize;
   opacity: 0.9;
   margin-bottom: 10px;
-  color: var(--color-base-content);
+  color: var(--sky-ink, var(--color-base-content));
 }
 
 .weather-unavailable {
@@ -954,7 +970,8 @@
 .refresh-button.day-button {
   background: rgba(255, 255, 255, 0.5) !important;
   border: 1px solid rgba(255, 255, 255, 0.6) !important;
-  color: var(--color-base-content) !important;
+  /* Sits on the light day ground whatever the theme or sky tint. */
+  color: #0f172a !important;
   box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.1) !important;
 }
 
@@ -976,7 +993,6 @@
 [data-theme="dark"] .refresh-button.day-button {
   background: rgba(255, 255, 255, 0.2) !important;
   border: 1px solid rgba(255, 255, 255, 0.3) !important;
-  color: var(--color-base-content) !important;
 }
 
 [data-theme="light"] .refresh-button.night-button {
@@ -988,7 +1004,6 @@
 [data-theme="light"] .refresh-button.day-button {
   background: rgba(255, 255, 255, 0.6) !important;
   border: 1px solid rgba(255, 255, 255, 0.7) !important;
-  color: var(--color-base-content) !important;
 }
 
 [data-theme="synthwave"] .refresh-button.night-button {
@@ -1000,7 +1015,6 @@
 [data-theme="synthwave"] .refresh-button.day-button {
   background: rgba(255, 0, 255, 0.15) !important;
   border: 1px solid rgba(255, 0, 255, 0.3) !important;
-  color: var(--color-base-content) !important;
 }
 
 /* Ensure all text elements use theme-aware colors */
@@ -1015,24 +1029,12 @@
 }
 
 /* Theme-specific text enhancements for better readability */
-[data-theme="dark"] .weather-text-container {
-  color: #ffffff !important;
-}
-
-[data-theme="light"] .weather-text-container {
-  color: #000000 !important;
-}
-
-[data-theme="cupcake"] .weather-text-container {
-  color: #291334 !important;
-}
-
-[data-theme="corporate"] .weather-text-container {
-  color: #ffffff !important;
-}
-
-[data-theme="synthwave"] .weather-text-container {
-  color: #ffffff !important;
+/* Card text follows the sky behind it (data-sky, see "Sky backgrounds"),
+   not the page theme: these rules used to pin it per theme, which put
+   black text on the night sky in the light themes and white text on the
+   day sky in the dark ones. */
+.weather-card[data-sky] .weather-text-container {
+  color: var(--sky-ink) !important;
 }
 
 /* Fix z-index stacking for dropdown menu */
