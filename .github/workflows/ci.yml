@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
+        with:
+          # npm test needs Node's built-in type stripping (22.18+).
+          node-version-file: .nvmrc
+          cache: npm
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run type-check
+      - run: npm test
+
+      - name: Build
+        run: npm run build
+        env:
+          # Dummy, non-secret values. The next step fails if either one
+          # reaches dist/, which would mean the key ships to browsers again.
+          OPENWEATHER_API_KEY: ci-dummy-key-must-not-ship
+          VITE_OPEN_WEATHER_API_KEY: ci-dummy-key-must-not-ship
+
+      - name: Check that no API key or OpenWeather call is in the bundle
+        run: |
+          if grep -rlE 'ci-dummy-key-must-not-ship|api\.openweathermap\.org' dist; then
+            echo "::error::dist/ contains the API key or a direct OpenWeather call"
+            exit 1
+          fi

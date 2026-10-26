@@ -5,30 +5,58 @@ import ScatteredCloudOverlay from "@/assets/ScatteredCloudOverlay";
 import SnowOverlay from "@/assets/SnowOverlay";
 import SunRays from "@/assets/SunRays";
 import ThunderstormOverlay from "@/assets/ThunderstormOverlay";
-import CountrySelector, { Zone } from "@/components/CountrySelector";
+import CountrySelector from "@/components/CountrySelector";
 import TemperatureMeter from "@/components/TemperatureMeter";
 import { Button } from "@/components/ui/button";
-import axios from "axios";
+import { COUNTRY_OPTIONS, type Zone } from "@/data/countries";
+import {
+  CITIES_STORAGE_KEY,
+  initialCities,
+  serializeCities,
+  urlWithCities,
+} from "@/lib/cities";
+import { formatGmtOffset, isNightAt } from "@/lib/time";
+import {
+  failureOf,
+  fetchWeather,
+  weatherFailureHint,
+  type WeatherFailure,
+  type WeatherInfo,
+} from "@/lib/weather";
 import { useEffect, useState } from "react";
 
-interface WeatherInfo {
-  temp: number;
-  desc: string;
-  icon: string;
-  main: string;
+const MAX_CITIES = 3;
+
+const DEFAULT_ZONES: Zone[] = [
+  { label: "Chile (Santiago)", tz: "America/Santiago", city: "Santiago,CL" },
+  { label: "Bangladesh (Dhaka)", tz: "Asia/Dhaka", city: "Dhaka,BD" },
+  { label: "Thailand (Bangkok)", tz: "Asia/Bangkok", city: "Bangkok,TH" },
+];
+
+function readStoredCities(): string | null {
+  try {
+    return window.localStorage.getItem(CITIES_STORAGE_KEY);
+  } catch {
+    return null;
+  }
 }
 
 export default function App() {
-  const [selectedZones, setSelectedZones] = useState<Zone[]>([
-    { label: "Chile (Santiago)", tz: "America/Santiago", city: "Santiago,CL" },
-    { label: "Bangladesh (Dhaka)", tz: "Asia/Dhaka", city: "Dhaka,BD" },
-    { label: "Thailand (Bangkok)", tz: "Asia/Bangkok", city: "Bangkok,TH" },
-  ]);
+  const [selectedZones, setSelectedZones] = useState<Zone[]>(() =>
+    initialCities({
+      search: window.location.search,
+      stored: readStoredCities(),
+      options: COUNTRY_OPTIONS,
+      defaults: DEFAULT_ZONES,
+      max: MAX_CITIES,
+    })
+  );
   const [times, setTimes] = useState<Record<string, string>>({});
   const [weather, setWeather] = useState<Record<string, WeatherInfo | null>>({});
   const [currentTheme, setCurrentTheme] = useState<string>("light");
   const [weatherLoading, setWeatherLoading] = useState<Record<string, boolean>>({});
   const [notifications, setNotifications] = useState<Record<string, boolean>>({});
+  const [weatherErrors, setWeatherErrors] = useState<Record<string, WeatherFailure>>({});
 
   // Update state objects when selectedZones changes
   useEffect(() => {
@@ -39,6 +67,22 @@ export default function App() {
     setWeather(initialWeather);
     setWeatherLoading(initialLoading);
     setNotifications(initialNotifications);
+    setWeatherErrors({});
+  }, [selectedZones]);
+
+  // Keep the chosen cities across reloads, and in the address bar so the
+  // page URL can be shared.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(CITIES_STORAGE_KEY, serializeCities(selectedZones));
+    } catch {
+      // Storage can be blocked (private mode, site settings); the URL still works.
+    }
+    const { pathname, search, hash, href } = window.location;
+    const next = urlWithCities(href, selectedZones);
+    if (next !== `${pathname}${search}${hash}`) {
+      window.history.replaceState(window.history.state, "", next);
+    }
   }, [selectedZones]);
 
   useEffect(() => {
@@ -48,7 +92,7 @@ export default function App() {
   }, []);
 
   const handleAddCountry = (zone: Zone) => {
-    if (selectedZones.length < 3) {
+    if (selectedZones.length < MAX_CITIES) {
       setSelectedZones([...selectedZones, zone]);
     }
   };
@@ -71,6 +115,11 @@ export default function App() {
       delete newNotifications[zone.label];
       return newNotifications;
     });
+    setWeatherErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[zone.label];
+      return newErrors;
+    });
     setTimes(prev => {
       const newTimes = { ...prev };
       delete newTimes[zone.label];
@@ -85,34 +134,22 @@ export default function App() {
   };
 
   const refreshWeatherForCity = async (zone: Zone) => {
-    const key = import.meta.env.VITE_OPEN_WEATHER_API_KEY;
-    if (!key) {
-      setWeather((prev) => ({ ...prev, [zone.label]: null }));
-      setWeatherLoading((prev) => ({ ...prev, [zone.label]: false }));
-      return;
-    }
     try {
       setWeatherLoading((prev) => ({ ...prev, [zone.label]: true }));
-      const res = await axios.get(
-        "https://api.openweathermap.org/data/2.5/weather",
-        { params: { q: zone.city, units: "metric", appid: key } }
-      );
-      const w = res.data;
-      setWeather((prev) => ({
-        ...prev,
-        [zone.label]: {
-          temp: w.main.temp,
-          desc: w.weather[0].description,
-          icon: w.weather[0].icon,
-          main: w.weather[0].main.toLowerCase(),
-        },
-      }));
+      const info = await fetchWeather(zone.city);
+      setWeather((prev) => ({ ...prev, [zone.label]: info }));
+      setWeatherErrors((prev) => {
+        const next = { ...prev };
+        delete next[zone.label];
+        return next;
+      });
       setNotifications((prev) => ({ ...prev, [zone.label]: true }));
       setTimeout(() => {
         setNotifications((prev) => ({ ...prev, [zone.label]: false }));
       }, 3000);
-    } catch {
+    } catch (error) {
       setWeather((prev) => ({ ...prev, [zone.label]: null }));
+      setWeatherErrors((prev) => ({ ...prev, [zone.label]: failureOf(error) }));
     } finally {
       setWeatherLoading((prev) => ({ ...prev, [zone.label]: false }));
     }
@@ -136,13 +173,7 @@ export default function App() {
           weekday: "long",
         });
 
-        const tempDate = new Date(now.toLocaleString("en-US", { timeZone: tz }));
-        const utcDate = new Date(now.toLocaleString("en-US", { timeZone: "UTC" }));
-        const offsetMs = tempDate.getTime() - utcDate.getTime();
-        const offsetHours = Math.round(offsetMs / (1000 * 60 * 60));
-        const gmtOffset = offsetHours >= 0 ? `+${offsetHours}` : `${offsetHours}`;
-
-        t[label] = `${dayString}|${timeString} (GMT${gmtOffset})`;
+        t[label] = `${dayString}|${timeString} (${formatGmtOffset(tz, now)})`;
       });
       setTimes(t);
     };
@@ -152,37 +183,14 @@ export default function App() {
   }, [selectedZones]);
 
   useEffect(() => {
-    const key = import.meta.env.VITE_OPEN_WEATHER_API_KEY;
-
-    if (!key) {
-      selectedZones.forEach(({ label }) => {
-        setWeatherLoading((prev) => ({ ...prev, [label]: false }));
-        setWeather((prev) => ({ ...prev, [label]: null }));
-      });
-      return;
-    }
-
     const fetchWeatherForCity = async ({ label, city }: Zone) => {
       try {
         setWeatherLoading((prev) => ({ ...prev, [label]: true }));
-
-        const res = await axios.get(
-          "https://api.openweathermap.org/data/2.5/weather",
-          { params: { q: city, units: "metric", appid: key } }
-        );
-        const w = res.data;
-
-        setWeather((prev) => ({
-          ...prev,
-          [label]: {
-            temp: w.main.temp,
-            desc: w.weather[0].description,
-            icon: w.weather[0].icon,
-            main: w.weather[0].main.toLowerCase(),
-          },
-        }));
-      } catch {
+        const info = await fetchWeather(city);
+        setWeather((prev) => ({ ...prev, [label]: info }));
+      } catch (error) {
         setWeather((prev) => ({ ...prev, [label]: null }));
+        setWeatherErrors((prev) => ({ ...prev, [label]: failureOf(error) }));
       } finally {
         setWeatherLoading((prev) => ({ ...prev, [label]: false }));
       }
@@ -191,17 +199,11 @@ export default function App() {
     selectedZones.forEach(fetchWeatherForCity);
   }, [selectedZones]);
 
-  const getWeatherOverlay = (main?: string, desc?: string, timezone?: string) => {
+  const getWeatherOverlay = (main: string | undefined, desc: string | undefined, isNight: boolean) => {
     if (!main) return null;
 
     const condition = main.toLowerCase();
     const description = desc?.toLowerCase() || "";
-
-    const isNight = timezone ? (() => {
-      const now = new Date();
-      const hour = new Date(now.toLocaleString("en-US", { timeZone: timezone })).getHours();
-      return hour < 6 || hour >= 18;
-    })() : false;
 
     if (condition.includes("rain") || condition.includes("drizzle")) {
       return <RainOverlay />;
@@ -296,18 +298,15 @@ export default function App() {
           selected={selectedZones}
           onAdd={handleAddCountry}
           onRemove={handleRemoveCountry}
-          max={3}
+          max={MAX_CITIES}
         />
         <div className="grid gap-8 grid-cols-1 lg:grid-cols-3 w-full max-w-7xl">
           {selectedZones.map((zone) => {
             const w = weather[zone.label];
             const isLoading = weatherLoading[zone.label];
             const showNotification = notifications[zone.label];
-            const overlay = getWeatherOverlay(w?.main, w?.desc, zone.tz);
-
-            const now = new Date();
-            const hour = new Date(now.toLocaleString("en-US", { timeZone: zone.tz })).getHours();
-            const isNight = hour < 6 || hour >= 18;
+            const isNight = isNightAt(zone.tz, new Date(), w);
+            const overlay = getWeatherOverlay(w?.main, w?.description, isNight);
             // The card's text sits on the sky, not on the page background, so
             // its color follows the sky rather than the daisyUI theme: night,
             // or a day under the rain or thunderstorm tint (.weather-sky in
@@ -396,10 +395,10 @@ export default function App() {
                               <span className="degree-symbol">°C</span>
                             </div>
                             <div className="feels-like">
-                              Feels like {w.temp.toFixed(0)}°C
+                              Feels like {w.feelsLike.toFixed(0)}°C
                             </div>
                           </div>
-                          <div className="weather-desc">{w.desc}</div>
+                          <div className="weather-desc">{w.description}</div>
                           <TemperatureMeter temperature={w.temp} className="justify-center mt-3" />
                         </>
                       ) : (
@@ -409,10 +408,7 @@ export default function App() {
                           </svg>
                           <span>Weather unavailable</span>
                           <div className="retry-hint">
-                            {import.meta.env.VITE_OPEN_WEATHER_API_KEY === 'demo_key_replace_with_real_key' || !import.meta.env.VITE_OPEN_WEATHER_API_KEY
-                              ? 'Add your OpenWeatherMap API key to .env file'
-                              : 'Check your internet connection and try refreshing'
-                            }
+                            {weatherFailureHint(weatherErrors[zone.label])}
                           </div>
                         </div>
                       )}
@@ -463,8 +459,19 @@ export default function App() {
         </div>
       </main>
 
-      <footer className="flex justify-center items-center p-4 footer-glass">
+      <footer className="flex flex-col sm:flex-row gap-1 sm:gap-3 justify-center items-center p-4 footer-glass">
         <p className="text-sm">© {new Date().getFullYear()} Devsaround</p>
+        <p className="text-sm">
+          Weather data by{" "}
+          <a
+            className="link"
+            href="https://openweathermap.org/"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            OpenWeather
+          </a>
+        </p>
       </footer>
     </div>
   );
