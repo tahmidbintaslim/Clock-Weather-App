@@ -65,7 +65,7 @@ flowchart LR
 - **Weather** goes through `api/weather.ts`, which:
   - accepts exactly one query parameter, `q`, and only for the 87 cities the picker offers, so it is not an open OpenWeather proxy (a test keeps the allowlist and the picker in sync);
   - returns only the six fields the UI uses, and never logs or returns the key;
-  - sets `Cache-Control: public, max-age=0, s-maxage=600, stale-while-revalidate=60` on success and `no-store` on errors;
+  - sets `Cache-Control: public, max-age=0, s-maxage=600, stale-while-revalidate=60` on success (on an answer served from the memo below, `s-maxage` is shortened by that answer's age), `public, max-age=0, s-maxage=600` on a 404, and `no-store` on every other error;
   - keeps each city's answer in memory per function instance (10 minutes for a good answer or a 404, 30 seconds for a failure), so respelled URLs that skip the CDN copy still cost at most one OpenWeather call per city, per instance, every 10 minutes;
   - answers `400` (bad input), `404` (OpenWeather has no such city), `405` (not GET), `502` (OpenWeather error or timeout after 8 s) and `503` (key not set).
 - **Local development** uses the same handler: a small Vite plugin in `vite.config.ts` mounts it on `npm run dev` and `npm run preview`, so you don't need the Vercel CLI.
