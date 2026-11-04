@@ -1,16 +1,53 @@
+<div align="center">
+
 # World Clock & Weather
 
 Local time and current weather for up to three cities, side by side, each on a sky that follows the city's own day and night.
 
 [![CI](https://github.com/tahmidbintaslim/Clock-Weather-App/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/tahmidbintaslim/Clock-Weather-App/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/github/license/tahmidbintaslim/Clock-Weather-App)](LICENSE)
+[![Last commit](https://img.shields.io/github/last-commit/tahmidbintaslim/Clock-Weather-App/main)](https://github.com/tahmidbintaslim/Clock-Weather-App/commits/main)
 [![Live demo](https://img.shields.io/badge/demo-clock--weather--app--six.vercel.app-black?logo=vercel)](https://clock-weather-app-six.vercel.app/)
+[![GitHub stars](https://img.shields.io/github/stars/tahmidbintaslim/Clock-Weather-App?style=flat)](https://github.com/tahmidbintaslim/Clock-Weather-App/stargazers)
+
+**[Live demo](https://clock-weather-app-six.vercel.app/)** · [Quick start](#quick-start) · [Contributing](#contributing)
+
+</div>
 
 **Live demo:** [clock-weather-app-six.vercel.app](https://clock-weather-app-six.vercel.app/)
 
 ![Three city cards in the light theme: Santiago on a clear morning with the sun, Dhaka and Bangkok at night under a moon, each with the local time, UTC offset, temperature, feels-like temperature and conditions](docs/images/three-cities-light.webp)
 
 <sub>Screenshots are from a local build with sample weather values and a fixed clock, so they stay reproducible. The live demo shows real OpenWeather data.</sub>
+
+## Quick start
+
+You need Node.js 22.18 or later. An OpenWeather key is optional: without one, the clocks run and the weather cards show a setup hint.
+
+```bash
+git clone https://github.com/tahmidbintaslim/Clock-Weather-App.git
+cd Clock-Weather-App
+npm ci
+cp .env.example .env.local   # then set OPENWEATHER_API_KEY
+npm run dev                  # http://localhost:5173
+```
+
+Full steps are in [Getting started](#getting-started).
+
+## Contents
+
+- [Quick start](#quick-start)
+- [Features](#features)
+- [Tech stack](#tech-stack)
+- [Architecture](#architecture)
+- [Getting started](#getting-started)
+- [Sharing a set of cities](#sharing-a-set-of-cities)
+- [Deployment](#deployment)
+- [Project structure](#project-structure)
+- [Status and roadmap](#status-and-roadmap) (includes known limits)
+- [Contributing](#contributing)
+- [Security](#security)
+- [License](#license)
 
 ## Features
 
@@ -164,6 +201,12 @@ Possible next steps, in rough order: fetch only the added city, reduced-motion s
 ## Contributing
 
 Issues and pull requests are welcome. Before opening a pull request, run `npm run lint`, `npm run type-check`, `npm test` and `npm run build`; CI runs the same checks. If you add a city to `src/data/countries.ts`, add the same `city` value to `ALLOWED_CITIES` in `api/weather.ts`, or the tests fail.
+
+Bug reports and feature ideas use the [issue forms](https://github.com/tahmidbintaslim/Clock-Weather-App/issues/new/choose). See [CONTRIBUTING.md](CONTRIBUTING.md) for the full workflow.
+
+## Security
+
+Please report security problems, such as a way to make `/api/weather` leak the key or act as an open proxy, privately and not in a public issue. See [SECURITY.md](SECURITY.md).
 
 ## License
 
